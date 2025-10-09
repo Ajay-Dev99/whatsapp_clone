@@ -2,6 +2,8 @@ import { TbMessage2Plus } from "react-icons/tb";
 import { CiMenuKebab } from "react-icons/ci";
 import { FaSearch } from "react-icons/fa";
 import { use, useState } from "react";
+import { PiUsersThreeFill } from "react-icons/pi";
+import { useNavigate } from "react-router-dom";
 
 const users = [
     {
@@ -73,8 +75,10 @@ const users = [
 ];
 
 function ChatList() {
+    const navigate = useNavigate();
     const [selectedChat, setSelectedChat] = useState(null);
     const [selectedInsight, setSelectedInsight] = useState('All');
+    const [menuOpen, setMenuOpen] = useState(false);
 
 
     const handleChatSelect = (user) => {
@@ -94,7 +98,30 @@ function ChatList() {
                 <h1 className='text-white ms-4 text-[1.5rem] font-medium'>WhatsApp</h1>
                 <div className="flex gap-2 pe-1 items-center">
                     <TbMessage2Plus className='text-white text-[1.5rem] cursor-pointer' />
-                    <CiMenuKebab className='text-white text-[1.5rem] cursor-pointer' />
+                    <div className="relative">
+                        <CiMenuKebab className='text-white text-[1.5rem] cursor-pointer' onClick={() => setMenuOpen(!menuOpen)} />
+                        {menuOpen && (
+                            <div className="absolute left-0 mt-2 w-56 bg-[#222] rounded-2xl shadow-lg py-3 z-50 border border-[#333] flex flex-col gap-2 animate-fade-in">
+                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]">
+                                    <PiUsersThreeFill className="text-[1.2rem]" />
+                                    New group
+                                </button>
+                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]">
+                                    <span className="text-[1.2rem]">★</span>
+                                    Starred messages
+                                </button>
+                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]">
+                                    <span className="text-[1.2rem]">☑</span>
+                                    Select chats
+                                </button>
+                                <hr className="border-[#333] mx-5" />
+                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]" onClick={() => navigate('/')}>
+                                    <span className="text-[1.2rem]">↩</span>
+                                    Log out
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
             {/* Search Bar */}
