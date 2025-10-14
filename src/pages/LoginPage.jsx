@@ -20,10 +20,11 @@ function LoginPage() {
         }
     }, [sendOtpSuccess, navigate, email])
 
-    // Handle error display
+    // Handle error display (optional - errors are now shown via toast)
     useEffect(() => {
         if (sendOtpError) {
-            setError(sendOtpError.message || 'Failed to send OTP. Please try again.')
+            // Set local error state for form validation display
+            setError('Failed to send OTP. Please try again.')
         }
     }, [sendOtpError])
 
