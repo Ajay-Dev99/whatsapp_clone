@@ -1,31 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import useAuth from '../hooks/useAuth'
 
 function LoginPage() {
     const [email, setEmail] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
     const navigate = useNavigate()
+    const {
+        sendOtp,
+        isSendingOtp,
+        sendOtpError,
+        sendOtpSuccess
+    } = useAuth()
+
+    // Handle success navigation
+    useEffect(() => {
+        if (sendOtpSuccess) {
+            navigate('/verify-otp', { state: { email } })
+        }
+    }, [sendOtpSuccess, navigate, email])
+
+    // Handle error display
+    useEffect(() => {
+        if (sendOtpError) {
+            setError(sendOtpError.message || 'Failed to send OTP. Please try again.')
+        }
+    }, [sendOtpError])
 
     const handleEmailSubmit = async (e) => {
         e.preventDefault()
 
-        // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(email)) {
             setError('Please enter a valid email address')
             return
         }
 
-        setIsLoading(true)
-        setError('')
-
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false)
-            // Navigate to OTP verification with email
-            navigate('/verify-otp', { state: { email } })
-        }, 2000)
+        setError('') // Clear previous errors
+        sendOtp(email)
     }
 
     return (
@@ -57,7 +69,7 @@ function LoginPage() {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 outline-none text-gray-800 placeholder-gray-500"
                                 placeholder="Enter your email address"
                                 required
-                                disabled={isLoading}
+                                disabled={isSendingOtp}
                             />
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,10 +89,10 @@ function LoginPage() {
 
                     <button
                         type="submit"
-                        disabled={isLoading || !email}
+                        disabled={isSendingOtp || !email}
                         className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2"
                     >
-                        {isLoading ? (
+                        {isSendingOtp ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
