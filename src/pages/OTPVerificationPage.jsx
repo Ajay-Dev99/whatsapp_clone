@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-
+import useAuth from '../hooks/useAuth'
 function OTPVerificationPage() {
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
     const [isLoading, setIsLoading] = useState(false)
@@ -10,7 +10,7 @@ function OTPVerificationPage() {
     const navigate = useNavigate()
     const location = useLocation()
     const inputRefs = useRef([])
-
+    const { verifyOtp, sendOtp, isVerifyingOtp, isSendingOtp } = useAuth()
     const email = location.state?.email || 'your email'
 
     // Timer countdown
@@ -75,22 +75,23 @@ function OTPVerificationPage() {
         setIsLoading(true)
         setError('')
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false)
-            if (otpString === '123456') { // Demo OTP
+        verifyOtp({ email, otp: otpString }, {
+            onSuccess: () => {
                 navigate('/home')
-            } else {
-                setError('Invalid OTP. Please try again.')
+                setIsLoading(false)
+            },
+            onError: (error) => {
+                setError(error.message)
+                setIsLoading(false)
             }
-        }, 2000)
+        })
     }
 
     const handleResendOTP = () => {
         setTimeLeft(60)
         setCanResend(false)
         setError('')
-        // Here you would typically call your API to resend OTP
+        sendOtp(email)
     }
 
     const formatTime = (seconds) => {
@@ -146,7 +147,7 @@ function OTPVerificationPage() {
                                     onKeyDown={(e) => handleKeyDown(index, e)}
                                     onPaste={handlePaste}
                                     className="w-12 h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 outline-none"
-                                    disabled={isLoading}
+                                    disabled={isLoading || isVerifyingOtp || isSendingOtp}
                                 />
                             ))}
                         </div>
@@ -166,13 +167,13 @@ function OTPVerificationPage() {
                         disabled={isLoading || otp.join('').length !== 6}
                         className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2"
                     >
-                        {isLoading ? (
+                        {isLoading || isVerifyingOtp ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Verifying...
+                                {isVerifyingOtp ? 'Verifying...' : 'Loading...'}
                             </>
                         ) : (
                             <>
