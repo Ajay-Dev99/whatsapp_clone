@@ -1,95 +1,51 @@
 import { TbMessage2Plus } from "react-icons/tb";
 import { CiMenuKebab } from "react-icons/ci";
 import { FaSearch } from "react-icons/fa";
-import { use, useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { PiUsersThreeFill } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
-
-const users = [
-    {
-        id: 1,
-        name: "John Doe",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "Hey! How are you?",
-        lastSeen: "10:30 AM",
-        unreadCount: 2
-    },
-    {
-        id: 2,
-        name: "Jane Smith",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "I'm good, thanks!",
-        lastSeen: "10:31 AM",
-        unreadCount: 5
-    },
-    {
-        id: 3,
-        name: "Alice Johnson",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "What about you?",
-        lastSeen: "10:32 AM",
-        unreadCount: 3
-    },
-    {
-        id: 4,
-        name: "John Doe",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "Hey! How are you?",
-        lastSeen: "10:30 AM"
-    },
-    {
-        id: 5,
-        name: "Jane Smith",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "I'm good, thanks!",
-        lastSeen: "10:31 AM"
-    },
-    {
-        id: 6,
-        name: "Alice Johnson",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "What about you?",
-        lastSeen: "10:32 AM"
-    },
-    {
-        id: 7,
-        name: "John Doe",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "Hey! How are you?",
-        lastSeen: "10:30 AM"
-    },
-    {
-        id: 8,
-        name: "Jane Smith",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "I'm good, thanks!",
-        lastSeen: "10:31 AM"
-    },
-    {
-        id: 9,
-        name: "Alice Johnson",
-        avatar: "https://png.pngtree.com/png-clipart/20230927/original/pngtree-man-avatar-image-for-profile-png-image_13001877.png",
-        lastMessage: "What about you?",
-        lastSeen: "10:32 AM"
-    }
-];
+import { useUserList } from "../hooks/useUserList";
+import { formatLastSeen, DEFAULT_AVATAR } from "../utils/format";
 
 function ChatList() {
     const navigate = useNavigate();
     const [selectedChat, setSelectedChat] = useState(null);
     const [selectedInsight, setSelectedInsight] = useState('All');
     const [menuOpen, setMenuOpen] = useState(false);
+    const sentinelRef = useRef(null);
 
+    const {
+        data,
+        isLoading,
+        error,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useUserList(10);
+
+    // flatten pages into a single users array
+    const users = data?.pages?.flatMap(p => p.data || p.users || []) || [];
 
     const handleChatSelect = (user) => {
         setSelectedChat(user.id);
-
-        users.forEach(u => {
-            if (u.id === user.id) {
-                u.unreadCount = 0;
-            }
-        })
+        // For now we just set selected chat locally. Marking messages read should be handled via API.
     }
+
+    // IntersectionObserver to trigger loading next page
+    const onIntersect = useCallback((entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+    useEffect(() => {
+        const node = sentinelRef.current;
+        if (!node) return;
+        const io = new IntersectionObserver(onIntersect, { root: null, rootMargin: '200px', threshold: 0.1 });
+        io.observe(node);
+        return () => io.disconnect();
+    }, [onIntersect]);
 
     return (
         <div className='flex flex-col h-screen py-3'>
@@ -151,24 +107,37 @@ function ChatList() {
             </div>
             {/* Chat List */}
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto mt-3 hide-scrollbar px-3">
-                {users.map(user => (
-                    <div key={user.id + user.lastSeen} className="flex items-center gap-3 px-5 cursor-pointer hover:bg-[#222] py-2 rounded-md" onClick={() => handleChatSelect(user)} style={{ backgroundColor: selectedChat === user.id ? '#222' : 'transparent' }}>
-                        <div className="w-12 h-12 rounded-full">
-                            <img src={user.avatar} alt="" className='w-full h-full rounded-full' />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between">
-                                <h1 className='text-white text-[1rem] font-medium'>{user.name}</h1>
-                                <span className={`${user.unreadCount > 0 ? 'text-[#21c063]' : 'text-[#909090]'} text-[0.7rem]`}>{user.lastSeen} </span>
-                            </div>
+                {isLoading && <div className="text-[#a3acac] p-4">Loading...</div>}
+                {error && <div className="text-red-400 p-4">Failed to load users</div>}
 
-                            <div className="flex items-center justify-between mt-1">
-                                <p className='text-[#a3acac] text-[0.8rem] m-0'>{user.lastMessage}</p>
-                                {user.unreadCount > 0 && <span className="w-5 h-5 flex items-center justify-center rounded-full bg-[#21c063] text-white text-xs font-semibold ml-2">{user.unreadCount}</span>}
+                {users.map(user => {
+                    const avatar = user.avatar || DEFAULT_AVATAR;
+                    const lastSeenText = formatLastSeen(user.lastSeen);
+                    return (
+                        <div key={(user._id || user.id) + (user.lastSeen || '')} className="flex items-center gap-3 px-5 cursor-pointer hover:bg-[#222] py-2 rounded-md" onClick={() => handleChatSelect(user)} style={{ backgroundColor: selectedChat === (user._id || user.id) ? '#222' : 'transparent' }}>
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#222]">
+                                <img src={avatar} alt="avatar" className='w-full h-full rounded-full object-cover' />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex justify-between">
+                                    <h1 className='text-white text-[1rem] font-medium'>{user.name || (user.email || '').split('@')[0]}</h1>
+                                    <span className={`${(user.unreadCount || 0) > 0 ? 'text-[#21c063]' : 'text-[#909090]'} text-[0.7rem]`}>{lastSeenText} </span>
+                                </div>
+
+                                <div className="flex items-center justify-between mt-1">
+                                    <p className='text-[#a3acac] text-[0.8rem] m-0'>{user.lastMessage || ''}</p>
+                                    {(user.unreadCount || 0) > 0 && <span className="w-5 h-5 flex items-center justify-center rounded-full bg-[#21c063] text-white text-xs font-semibold ml-2">{user.unreadCount}</span>}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                })}
+
+                {/* sentinel element observed by IntersectionObserver to trigger next page load */}
+                <div ref={sentinelRef} className="w-full h-6" />
+
+                {isFetchingNextPage && <div className="text-[#a3acac] p-4">Loading more...</div>}
+                {!hasNextPage && !isLoading && <div className="text-[#777] text-center p-3">No more users</div>}
             </div>
         </div>
     )
