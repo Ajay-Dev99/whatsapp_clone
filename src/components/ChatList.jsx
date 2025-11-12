@@ -26,6 +26,8 @@ function ChatList() {
     // flatten pages into a single users array
     const users = data?.pages?.flatMap(p => p.data || p.users || []) || [];
 
+    console.log(users, "users>>");
+
     const handleChatSelect = (user) => {
         setSelectedChat(user.id);
         // For now we just set selected chat locally. Marking messages read should be handled via API.
@@ -46,6 +48,13 @@ function ChatList() {
         io.observe(node);
         return () => io.disconnect();
     }, [onIntersect]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authUser');
+        localStorage.removeItem('authTokenExpiresAt');
+        navigate('/');
+    }
 
     return (
         <div className='flex flex-col h-screen py-3'>
@@ -71,7 +80,7 @@ function ChatList() {
                                     Select chats
                                 </button>
                                 <hr className="border-[#333] mx-5" />
-                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]" onClick={() => navigate('/')}>
+                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]" onClick={handleLogout}>
                                     <span className="text-[1.2rem]">↩</span>
                                     Log out
                                 </button>
@@ -110,6 +119,12 @@ function ChatList() {
                 {isLoading && <div className="text-[#a3acac] p-4">Loading...</div>}
                 {error && <div className="text-red-400 p-4">Failed to load users</div>}
 
+                {!isLoading && !error && users.length === 0 && (
+                    <div className="text-[#a3acac] p-6 text-center bg-[#1f2020] border border-[#2a2c2c] rounded-xl">
+                        No users available yet.
+                    </div>
+                )}
+
                 {users.map(user => {
                     const avatar = user.avatar || DEFAULT_AVATAR;
                     const lastSeenText = formatLastSeen(user.lastSeen);
@@ -137,7 +152,7 @@ function ChatList() {
                 <div ref={sentinelRef} className="w-full h-6" />
 
                 {isFetchingNextPage && <div className="text-[#a3acac] p-4">Loading more...</div>}
-                {!hasNextPage && !isLoading && <div className="text-[#777] text-center p-3">No more users</div>}
+                {users.length > 0 && !hasNextPage && !isLoading && <div className="text-[#777] text-center p-3">No more users</div>}
             </div>
         </div>
     )
