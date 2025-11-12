@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
+
 function OTPVerificationPage() {
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
     const [isLoading, setIsLoading] = useState(false)
@@ -11,7 +12,13 @@ function OTPVerificationPage() {
     const location = useLocation()
     const inputRefs = useRef([])
     const { verifyOtp, sendOtp, isVerifyingOtp, isSendingOtp } = useAuth()
-    const email = location.state?.email || 'your email'
+    const email = location.state?.email
+
+    useEffect(() => {
+        if (!email) {
+            navigate('/login', { replace: true })
+        }
+    }, [email, navigate])
 
     // Timer countdown
     useEffect(() => {
@@ -72,6 +79,12 @@ function OTPVerificationPage() {
             return
         }
 
+        if (!email) {
+            setError('Session expired. Please request a new OTP.')
+            navigate('/login', { replace: true })
+            return
+        }
+
         setIsLoading(true)
         setError('')
 
@@ -88,6 +101,11 @@ function OTPVerificationPage() {
     }
 
     const handleResendOTP = () => {
+        if (!email) {
+            setError('Cannot resend OTP. Please start the login process again.')
+            navigate('/login', { replace: true })
+            return
+        }
         setTimeLeft(60)
         setCanResend(false)
         setError('')
@@ -200,13 +218,6 @@ function OTPVerificationPage() {
                             Resend OTP in {formatTime(timeLeft)}
                         </p>
                     )}
-                </div>
-
-                {/* Demo Info */}
-                <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs text-blue-700 text-center">
-                        <strong>Demo:</strong> Use OTP <strong>123456</strong> to verify
-                    </p>
                 </div>
 
                 {/* Footer */}

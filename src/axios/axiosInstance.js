@@ -1,5 +1,6 @@
 import axios from "axios";
 import { showToast } from "../utils/toast";
+import { clearAuth, getAuthToken } from "../utils/authStorage";
 
 const axiosInstance = axios.create({
     baseURL: "http://localhost:3000/api/v1",
@@ -13,7 +14,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         // Add auth token if available
-        const token = localStorage.getItem('authToken');
+        const token = getAuthToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -65,7 +66,7 @@ axiosInstance.interceptors.response.use(
                     errorMessage = 'Unauthorized. Please login again.';
                     showToast.error('Session Expired', 'Please login again to continue');
                     // Clear auth token if unauthorized
-                    localStorage.removeItem('authToken');
+                    clearAuth();
                     // Optionally redirect to login
                     if (window.location.pathname !== '/login') {
                         setTimeout(() => {
