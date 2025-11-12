@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
+import { setUser } from '../global/features/userSlice'
+import { useDispatch } from 'react-redux'
 
 function OTPVerificationPage() {
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -13,7 +15,7 @@ function OTPVerificationPage() {
     const inputRefs = useRef([])
     const { verifyOtp, sendOtp, isVerifyingOtp, isSendingOtp } = useAuth()
     const email = location.state?.email
-
+    const dispatch = useDispatch()
     useEffect(() => {
         if (!email) {
             navigate('/login', { replace: true })
@@ -89,9 +91,12 @@ function OTPVerificationPage() {
         setError('')
 
         verifyOtp({ email, otp: otpString }, {
-            onSuccess: () => {
-                navigate('/home')
+            onSuccess: (data) => {
                 setIsLoading(false)
+                console.log(data, "data>>")
+                console.log(data.user, "data.user>>")
+                dispatch(setUser(data.user))
+                navigate('/home')
             },
             onError: (error) => {
                 setError(error.message)
