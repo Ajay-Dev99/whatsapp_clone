@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { IoMdSend } from 'react-icons/io';
-import { BsEmojiSmile } from 'react-icons/bs';
-import { MdAttachFile, MdMoreVert, MdCall, MdVideoCall, MdSearch, MdMic } from 'react-icons/md';
-import { FaCheck, FaCheckDouble } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from "react";
+import { IoMdSend } from "react-icons/io";
+import { BsEmojiSmile } from "react-icons/bs";
+import { MdAttachFile, MdMoreVert, MdCall, MdVideoCall, MdSearch, MdMic } from "react-icons/md";
+import { FaCheck, FaCheckDouble } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import ChatPlaceholder from "./ChatPlaceholder";
 
 // Sample message data with English messages
 const sampleMessages = [
@@ -107,10 +109,21 @@ const sampleMessages = [
 ];
 
 function ChatArea() {
+    const { activeUser } = useSelector((state) => state?.user);
     const [messages, setMessages] = useState(sampleMessages);
-    const [newMessage, setNewMessage] = useState('');
+    const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const messagesEndRef = useRef(null);
+
+    const hasActiveUser =
+        activeUser && typeof activeUser === "object" && Object.keys(activeUser).length > 0;
+
+    useEffect(() => {
+        if (!hasActiveUser) {
+            setMessages(sampleMessages);
+            setNewMessage("");
+        }
+    }, [hasActiveUser]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -140,6 +153,10 @@ function ChatArea() {
             handleSendMessage();
         }
     };
+
+    if (!hasActiveUser) {
+        return <ChatPlaceholder />;
+    }
 
     return (
         <div className="flex flex-col h-screen bg-[#0b141a] relative">

@@ -6,8 +6,12 @@ import { PiUsersThreeFill } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import { useUserList } from "../hooks/useUserList";
 import { formatLastSeen, DEFAULT_AVATAR } from "../utils/format";
+import { useSelector } from "react-redux";
 
 function ChatList() {
+    const { user, activeUser } = useSelector((state) => state?.user)
+
+    console.log(user, activeUser, "user>> 123")
     const navigate = useNavigate();
     const [selectedChat, setSelectedChat] = useState(null);
     const [selectedInsight, setSelectedInsight] = useState('All');
@@ -26,7 +30,6 @@ function ChatList() {
     // flatten pages into a single users array
     const users = data?.pages?.flatMap(p => p.data || p.users || []) || [];
 
-    console.log(users, "users>>");
 
     const handleChatSelect = (user) => {
         setSelectedChat(user.id);
