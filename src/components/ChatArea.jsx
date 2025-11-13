@@ -109,14 +109,14 @@ const sampleMessages = [
 ];
 
 function ChatArea() {
-    const { activeUser } = useSelector((state) => state?.user);
+    const { selectedChat } = useSelector((state) => state?.user);
     const [messages, setMessages] = useState(sampleMessages);
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const messagesEndRef = useRef(null);
 
     const hasActiveUser =
-        activeUser && typeof activeUser === "object" && Object.keys(activeUser).length > 0;
+        selectedChat && typeof selectedChat === "object" && Object.keys(selectedChat).length > 0;
 
     useEffect(() => {
         if (!hasActiveUser) {

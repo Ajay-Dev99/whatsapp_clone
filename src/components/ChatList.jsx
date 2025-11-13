@@ -6,18 +6,18 @@ import { PiUsersThreeFill } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import { useUserList } from "../hooks/useUserList";
 import { formatLastSeen, DEFAULT_AVATAR } from "../utils/format";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setSelectedChat } from "../global/features/userSlice";
+import useSocket from "../hooks/useSocket";
 
 function ChatList() {
-    const { user, activeUser } = useSelector((state) => state?.user)
-
-    console.log(user, activeUser, "user>> 123")
     const navigate = useNavigate();
-    const [selectedChat, setSelectedChat] = useState(null);
-    const [selectedInsight, setSelectedInsight] = useState('All');
+    const dispatch = useDispatch();
+    const [selectedInsight, setSelectedInsight] = useState("All");
     const [menuOpen, setMenuOpen] = useState(false);
     const sentinelRef = useRef(null);
-
+    const socket = useSocket();
+    const { selectedChat, user } = useSelector((state) => state?.user || {});
     const {
         data,
         isLoading,
@@ -27,40 +27,52 @@ function ChatList() {
         isFetchingNextPage,
     } = useUserList(10);
 
-    // flatten pages into a single users array
-    const users = data?.pages?.flatMap(p => p.data || p.users || []) || [];
+    const users = data?.pages?.flatMap((p) => p.data || p.users || []) || [];
+
+    const handleChatSelect = (chatUser) => {
+
+        const chatPayload = {
+            userId: user?._id,
+            chatUserId: chatUser?._id,
+        };
+
+        dispatch(setSelectedChat(chatUser));
 
 
-    const handleChatSelect = (user) => {
-        setSelectedChat(user.id);
-        // For now we just set selected chat locally. Marking messages read should be handled via API.
-    }
+        socket.emit("join:room", chatPayload)
+    };
 
-    // IntersectionObserver to trigger loading next page
-    const onIntersect = useCallback((entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-        }
-    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+    const onIntersect = useCallback(
+        (entries) => {
+            const entry = entries[0];
+            if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+            }
+        },
+        [fetchNextPage, hasNextPage, isFetchingNextPage]
+    );
 
     useEffect(() => {
         const node = sentinelRef.current;
         if (!node) return;
-        const io = new IntersectionObserver(onIntersect, { root: null, rootMargin: '200px', threshold: 0.1 });
+        const io = new IntersectionObserver(onIntersect, {
+            root: null,
+            rootMargin: "200px",
+            threshold: 0.1,
+        });
         io.observe(node);
         return () => io.disconnect();
     }, [onIntersect]);
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
-        localStorage.removeItem('authTokenExpiresAt');
-        navigate('/');
-    }
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("authUser");
+        localStorage.removeItem("authTokenExpiresAt");
+        navigate("/");
+    };
 
     return (
-        <div className='flex flex-col h-screen py-3'>
+        <div className="flex flex-col h-screen py-3">
             {/* Header */}
             <div className="flex justify-between mb-5">
                 <h1 className='text-white ms-4 text-[1.5rem] font-medium'>WhatsApp</h1>
@@ -131,8 +143,9 @@ function ChatList() {
                 {users.map(user => {
                     const avatar = user.avatar || DEFAULT_AVATAR;
                     const lastSeenText = formatLastSeen(user.lastSeen);
+                    const isActive = selectedChat?._id === user._id;
                     return (
-                        <div key={(user._id || user.id) + (user.lastSeen || '')} className="flex items-center gap-3 px-5 cursor-pointer hover:bg-[#222] py-2 rounded-md" onClick={() => handleChatSelect(user)} style={{ backgroundColor: selectedChat === (user._id || user.id) ? '#222' : 'transparent' }}>
+                        <div key={(user._id || user.id) + (user.lastSeen || '')} className="flex items-center gap-3 px-5 cursor-pointer hover:bg-[#222] py-2 rounded-md" onClick={() => handleChatSelect(user)} style={{ backgroundColor: isActive ? '#222' : 'transparent' }}>
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-[#222]">
                                 <img src={avatar} alt="avatar" className='w-full h-full rounded-full object-cover' />
                             </div>

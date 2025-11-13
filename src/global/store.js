@@ -1,35 +1,37 @@
-import { configureStore } from '@reduxjs/toolkit';
-import userReducer from './features/userSlice';
-import { getAuthUser, isTokenValid } from '../utils/authStorage';
+import { configureStore } from "@reduxjs/toolkit";
+import {
+  persistReducer,
+  persistStore,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import storage from "redux-persist/lib/storage";
+import userReducer from "./features/userSlice";
 
-const buildPreloadedState = () => {
-  if (typeof window === 'undefined') {
-    return undefined;
-  }
-
-  if (!isTokenValid()) {
-    return undefined;
-  }
-
-  const storedUser = getAuthUser();
-
-  if (!storedUser) {
-    return undefined;
-  }
-
-  return {
-    user: {
-      user: storedUser,
-      activeUser: null,
-    },
-  };
+const userPersistConfig = {
+  key: "user",
+  storage,
+  whitelist: ["user", "selectedChat"],
 };
 
-const store = configureStore({
+const persistedUserReducer = persistReducer(userPersistConfig, userReducer);
+
+export const store = configureStore({
   reducer: {
-    user: userReducer,
+    user: persistedUserReducer,
   },
-  preloadedState: buildPreloadedState(),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
 });
+
+export const persistor = persistStore(store);
 
 export default store;
