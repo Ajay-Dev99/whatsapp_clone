@@ -118,6 +118,9 @@ function ChatArea() {
     const hasActiveUser =
         selectedChat && typeof selectedChat === "object" && Object.keys(selectedChat).length > 0;
 
+    console.log(selectedChat, "selectedChat>> 123");
+    console.log(hasActiveUser, "hasActiveUser>> 123");
+
     useEffect(() => {
         if (!hasActiveUser) {
             setMessages(sampleMessages);

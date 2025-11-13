@@ -30,16 +30,21 @@ function ChatList() {
     const users = data?.pages?.flatMap((p) => p.data || p.users || []) || [];
 
     const handleChatSelect = (chatUser) => {
-
         const chatPayload = {
             userId: user?._id,
             chatUserId: chatUser?._id,
         };
 
-        dispatch(setSelectedChat(chatUser));
+        if (!socket) return;
 
-
-        socket.emit("join:room", chatPayload)
+        socket.emit("join:room", chatPayload, (response) => {
+            if (response?.success) {
+                alert("Room joined successfully" + response?.room?._id);
+                dispatch(setSelectedChat(chatUser));
+            } else {
+                console.warn("Failed to join room", response?.error);
+            }
+        });
     };
 
     const onIntersect = useCallback(
