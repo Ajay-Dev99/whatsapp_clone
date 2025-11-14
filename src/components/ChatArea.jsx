@@ -4,8 +4,10 @@ import { BsEmojiSmile } from "react-icons/bs";
 import { MdAttachFile, MdMoreVert, MdCall, MdVideoCall, MdSearch, MdMic } from "react-icons/md";
 import { FaCheck, FaCheckDouble } from "react-icons/fa";
 import { useSelector } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import ChatPlaceholder from "./ChatPlaceholder";
 import useMessages from "../hooks/useMessages";
+import useSocket from "../hooks/useSocket";
 
 function ChatArea() {
     const { selectedChat, user } = useSelector((state) => state?.user);
@@ -13,8 +15,11 @@ function ChatArea() {
     const { messages, isLoading, error, hasMore, loadMore, isLoadingMore, refresh, markAsRead } = useMessages(room?._id, 20);
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
+    const socket = useSocket();
+    const queryClient = useQueryClient();
 
     const hasActiveUser =
         selectedChat && typeof selectedChat === "object" && Object.keys(selectedChat).length > 0;
@@ -28,6 +33,80 @@ function ChatArea() {
             markAsRead();
         }
     }, [room?._id]);
+
+    // Listen for incoming messages via Socket.IO
+    useEffect(() => {
+        if (!socket || !room?._id) {
+            console.log("⚠️ Socket listener not active:", { socket: !!socket, roomId: room?._id });
+            return;
+        }
+
+        console.log("👂 Setting up socket listener for room:", room._id);
+
+        const handleNewMessage = (data) => {
+            console.log("📩 Received new message event:", data);
+
+            if (data.success && data.message) {
+                console.log("✅ Processing message:", data.message._id);
+
+                // Update React Query cache with new message
+                queryClient.setQueryData(["messages", room._id], (oldData) => {
+                    console.log("📦 Current cache state:", oldData ? "exists" : "empty");
+
+                    if (!oldData) {
+                        console.log("⚠️ No cache data, skipping update");
+                        return oldData;
+                    }
+
+                    // Check if message already exists (avoid duplicates)
+                    const messageExists = oldData.pages.some(page =>
+                        page.messages.some(msg => msg._id === data.message._id)
+                    );
+
+                    if (messageExists) {
+                        console.log("⚠️ Message already exists, skipping");
+                        return oldData;
+                    }
+
+                    // Add new message to the first page
+                    const newPages = [...oldData.pages];
+                    if (newPages.length > 0) {
+                        newPages[0] = {
+                            ...newPages[0],
+                            messages: [...newPages[0].messages, data.message]
+                        };
+                        console.log("✅ Message added to cache, total messages:", newPages[0].messages.length);
+                    }
+
+                    return {
+                        ...oldData,
+                        pages: newPages
+                    };
+                });
+
+                // Scroll to bottom for new messages
+                setTimeout(() => {
+                    scrollToBottom();
+                }, 100);
+
+                // Mark as read if room is open
+                if (data.message.sender?._id !== user?._id) {
+                    console.log("👁️ Marking message as read");
+                    markAsRead();
+                }
+            } else {
+                console.log("⚠️ Invalid message data:", data);
+            }
+        };
+
+        socket.on("chat:message:receive", handleNewMessage);
+        console.log("✅ Socket listener attached for chat:message:receive");
+
+        return () => {
+            console.log("🔴 Removing socket listener for room:", room._id);
+            socket.off("chat:message:receive", handleNewMessage);
+        };
+    }, [socket, room?._id, queryClient, user?._id]);
 
     // Scroll to bottom on initial room load
     const scrollToBottom = () => {
@@ -61,10 +140,54 @@ function ChatArea() {
     };
 
     const handleSendMessage = () => {
-        if (newMessage.trim()) {
-            setNewMessage("");
-            // After sending via socket, the message will come back via real-time updates
+        if (!newMessage.trim() || !socket || !room?._id || !user?._id || isSending) {
+            console.log("⚠️ Cannot send message:", {
+                hasContent: !!newMessage.trim(),
+                hasSocket: !!socket,
+                socketConnected: socket?.connected,
+                hasRoomId: !!room?._id,
+                hasUserId: !!user?._id,
+                isSending
+            });
+            return;
         }
+
+        const messageContent = newMessage.trim();
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
+
+        console.log("📤 Sending message:", {
+            roomId: room._id,
+            content: messageContent,
+            senderId: user._id,
+            tempId
+        });
+
+        setIsSending(true);
+
+        // Emit message via Socket.IO
+        socket.emit(
+            "chat:message",
+            {
+                roomId: room._id,
+                content: messageContent,
+                senderId: user._id,
+                receiverId: selectedChat?._id,
+                tempId,
+                type: "text"
+            },
+            (response) => {
+                setIsSending(false);
+                console.log("📬 Received acknowledgment:", response);
+
+                if (response?.success) {
+                    console.log("✅ Message sent successfully:", response.message._id);
+                    setNewMessage("");
+                } else {
+                    console.error("❌ Failed to send message:", response?.error);
+                    alert(`Failed to send message: ${response?.error || "Unknown error"}`);
+                }
+            }
+        );
     };
 
     const handleKeyPress = (e) => {
@@ -308,9 +431,36 @@ function ChatArea() {
                     {newMessage.trim() ? (
                         <button
                             onClick={handleSendMessage}
-                            className="text-[#00a884] hover:text-[#00c89d] transition-colors"
+                            disabled={isSending}
+                            className={`transition-colors ${isSending
+                                ? "text-gray-500 cursor-not-allowed"
+                                : "text-[#00a884] hover:text-[#00c89d]"
+                                }`}
                         >
-                            <IoMdSend className="text-[1.5rem]" />
+                            {isSending ? (
+                                <svg
+                                    className="animate-spin h-6 w-6"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <IoMdSend className="text-[1.5rem]" />
+                            )}
                         </button>
                     ) : (
                         <button className="text-white hover:text-[#8696a0] transition-colors">
