@@ -239,9 +239,43 @@ function ChatArea() {
                 {/* Empty state */}
                 {messages.length === 0 && !isLoading && (
                     <div className="flex items-center justify-center h-full">
-                        <div className="text-[#8696a0] text-center">
-                            <p className="text-lg mb-2">No messages yet</p>
-                            <p className="text-sm">Start the conversation!</p>
+                        <div className="text-center max-w-md px-6">
+                            {/* Icon/Illustration */}
+                            <div className="mb-6 flex justify-center">
+                                <div className="w-32 h-32 rounded-full bg-[#1f2c33] flex items-center justify-center border-2 border-[#2a3942]">
+                                    <svg
+                                        className="w-16 h-16 text-[#8696a0]"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            {/* Text content */}
+                            <h3 className="text-white text-xl font-medium mb-2">
+                                No messages yet
+                            </h3>
+                            <p className="text-[#8696a0] text-sm mb-6 leading-relaxed">
+                                Send a message to start the conversation with{" "}
+                                <span className="text-[#00a884] font-medium">
+                                    {room?.type === "group" ? room?.name : selectedChat?.name}
+                                </span>
+                            </p>
+
+                            {/* Decorative elements */}
+                            <div className="flex justify-center gap-2 opacity-50">
+                                <div className="w-2 h-2 rounded-full bg-[#8696a0]"></div>
+                                <div className="w-2 h-2 rounded-full bg-[#8696a0]"></div>
+                                <div className="w-2 h-2 rounded-full bg-[#8696a0]"></div>
+                            </div>
                         </div>
                     </div>
                 )}
