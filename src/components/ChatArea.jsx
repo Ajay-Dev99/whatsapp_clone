@@ -5,6 +5,7 @@ import { MdAttachFile, MdMoreVert, MdCall, MdVideoCall, MdSearch, MdMic } from "
 import { FaCheck, FaCheckDouble } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import ChatPlaceholder from "./ChatPlaceholder";
+import useMessages from "../hooks/useMessages";
 
 // Sample message data with English messages
 const sampleMessages = [
@@ -111,7 +112,7 @@ const sampleMessages = [
 function ChatArea() {
     const { selectedChat } = useSelector((state) => state?.user);
     const { room } = useSelector((state) => state?.room);
-    const [messages, setMessages] = useState(sampleMessages);
+    const { messages, isLoading, error, hasMore, loadMore, isLoadingMore, refresh, markAsRead, isMarkingAsRead } = useMessages(room?._id);
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const messagesEndRef = useRef(null);
