@@ -16,8 +16,11 @@ function ChatArea() {
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [typingUsers, setTypingUsers] = useState(new Set());
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
     const socket = useSocket();
     const queryClient = useQueryClient();
 
@@ -26,6 +29,22 @@ function ChatArea() {
 
     const hasActiveRoom =
         room && typeof room === "object" && Object.keys(room).length > 0;
+
+    // Cleanup typing timeout on unmount or room change
+    useEffect(() => {
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+            // Emit typing stop when leaving room
+            if (isTyping && socket && room?._id && user?._id) {
+                socket.emit("typing:stop", {
+                    roomId: room._id,
+                    userId: user._id
+                });
+            }
+        };
+    }, [room?._id]);
 
     // Mark messages as read when room opens
     useEffect(() => {
@@ -108,6 +127,37 @@ function ChatArea() {
         };
     }, [socket, room?._id, queryClient, user?._id]);
 
+    // Listen for typing indicators
+    useEffect(() => {
+        if (!socket || !room?._id) return;
+
+        const handleTypingStart = (data) => {
+            console.log("⌨️ User started typing:", data);
+            if (data.userId && data.userId !== user?._id) {
+                setTypingUsers(prev => new Set(prev).add(data.userId));
+            }
+        };
+
+        const handleTypingStop = (data) => {
+            console.log("⌨️ User stopped typing:", data);
+            if (data.userId) {
+                setTypingUsers(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(data.userId);
+                    return newSet;
+                });
+            }
+        };
+
+        socket.on("typing:start", handleTypingStart);
+        socket.on("typing:stop", handleTypingStop);
+
+        return () => {
+            socket.off("typing:start", handleTypingStart);
+            socket.off("typing:stop", handleTypingStop);
+        };
+    }, [socket, room?._id, user?._id]);
+
     // Scroll to bottom on initial room load
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -182,6 +232,18 @@ function ChatArea() {
                 if (response?.success) {
                     console.log("✅ Message sent successfully:", response.message._id);
                     setNewMessage("");
+
+                    // Stop typing indicator when message is sent
+                    if (isTyping) {
+                        setIsTyping(false);
+                        socket.emit("typing:stop", {
+                            roomId: room._id,
+                            userId: user._id
+                        });
+                        if (typingTimeoutRef.current) {
+                            clearTimeout(typingTimeoutRef.current);
+                        }
+                    }
                 } else {
                     console.error("❌ Failed to send message:", response?.error);
                     alert(`Failed to send message: ${response?.error || "Unknown error"}`);
@@ -195,6 +257,43 @@ function ChatArea() {
             e.preventDefault();
             handleSendMessage();
         }
+    };
+
+    // Handle typing indicator
+    const handleTyping = () => {
+        if (!socket || !room?._id || !user?._id) return;
+
+        // Emit typing start if not already typing
+        if (!isTyping) {
+            setIsTyping(true);
+            socket.emit("typing:start", {
+                roomId: room._id,
+                userId: user._id,
+                userName: user.name || user.email
+            });
+            console.log("⌨️ Emitted typing:start");
+        }
+
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Set timeout to emit typing stop after 2 seconds of inactivity
+        typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+            socket.emit("typing:stop", {
+                roomId: room._id,
+                userId: user._id
+            });
+            console.log("⌨️ Emitted typing:stop");
+        }, 2000);
+    };
+
+    // Handle input change with typing indicator
+    const handleInputChange = (e) => {
+        setNewMessage(e.target.value);
+        handleTyping();
     };
 
     if (!hasActiveUser || !hasActiveRoom) {
@@ -245,11 +344,22 @@ function ChatArea() {
                             {room?.type === "group" ? room?.name : selectedChat?.name || "Unknown User"}
                         </h3>
                         <p className="text-[#8696a0] text-[0.8rem]">
-                            {room?.type === "group"
-                                ? `${room?.participants?.length || 0} participants`
-                                : selectedChat?.online
-                                    ? "online"
-                                    : "offline"}
+                            {typingUsers.size > 0 ? (
+                                <span className="text-[#00a884] flex items-center gap-1">
+                                    <span className="flex gap-1">
+                                        <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
+                                        <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
+                                        <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
+                                    </span>
+                                    typing
+                                </span>
+                            ) : room?.type === "group" ? (
+                                `${room?.participants?.length || 0} participants`
+                            ) : selectedChat?.online ? (
+                                "online"
+                            ) : (
+                                "offline"
+                            )}
                         </p>
                     </div>
                 </div>
@@ -415,7 +525,7 @@ function ChatArea() {
                         <input
                             type="text"
                             value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
+                            onChange={handleInputChange}
                             onKeyPress={handleKeyPress}
                             placeholder="Type a message"
                             className="w-full bg-[#242626] text-white px-4 py-3 rounded-full border-none outline-none placeholder-[#8696a0] text-[0.9rem]"
