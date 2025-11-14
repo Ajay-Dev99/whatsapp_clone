@@ -110,6 +110,7 @@ const sampleMessages = [
 
 function ChatArea() {
     const { selectedChat } = useSelector((state) => state?.user);
+    const { room } = useSelector((state) => state?.room);
     const [messages, setMessages] = useState(sampleMessages);
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -118,15 +119,16 @@ function ChatArea() {
     const hasActiveUser =
         selectedChat && typeof selectedChat === "object" && Object.keys(selectedChat).length > 0;
 
-    console.log(selectedChat, "selectedChat>> 123");
-    console.log(hasActiveUser, "hasActiveUser>> 123");
+    const hasActiveRoom =
+        room && typeof room === "object" && Object.keys(room).length > 0;
+
 
     useEffect(() => {
-        if (!hasActiveUser) {
+        if (!hasActiveUser || !hasActiveRoom) {
             setMessages(sampleMessages);
             setNewMessage("");
         }
-    }, [hasActiveUser]);
+    }, [hasActiveUser, hasActiveRoom]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -157,7 +159,7 @@ function ChatArea() {
         }
     };
 
-    if (!hasActiveUser) {
+    if (!hasActiveUser || !hasActiveRoom) {
         return <ChatPlaceholder />;
     }
 

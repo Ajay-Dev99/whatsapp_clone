@@ -9,6 +9,7 @@ import { formatLastSeen, DEFAULT_AVATAR } from "../utils/format";
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedChat } from "../global/features/userSlice";
 import useSocket from "../hooks/useSocket";
+import { setRoom } from "../global/features/roomSlice";
 
 function ChatList() {
     const navigate = useNavigate();
@@ -39,8 +40,8 @@ function ChatList() {
 
         socket.emit("join:room", chatPayload, (response) => {
             if (response?.success) {
-                alert("Room joined successfully" + response?.room?._id);
                 dispatch(setSelectedChat(chatUser));
+                dispatch(setRoom(response?.room));
             } else {
                 console.warn("Failed to join room", response?.error);
             }
