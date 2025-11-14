@@ -135,6 +135,8 @@ function ChatArea() {
             console.log("⌨️ User started typing:", data);
             if (data.userId && data.userId !== user?._id) {
                 setTypingUsers(prev => new Set(prev).add(data.userId));
+                // Scroll to show typing indicator
+                setTimeout(() => scrollToBottom(), 100);
             }
         };
 
@@ -344,22 +346,11 @@ function ChatArea() {
                             {room?.type === "group" ? room?.name : selectedChat?.name || "Unknown User"}
                         </h3>
                         <p className="text-[#8696a0] text-[0.8rem]">
-                            {typingUsers.size > 0 ? (
-                                <span className="text-[#00a884] flex items-center gap-1">
-                                    <span className="flex gap-1">
-                                        <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
-                                        <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
-                                        <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
-                                    </span>
-                                    typing
-                                </span>
-                            ) : room?.type === "group" ? (
-                                `${room?.participants?.length || 0} participants`
-                            ) : selectedChat?.online ? (
-                                "online"
-                            ) : (
-                                "offline"
-                            )}
+                            {room?.type === "group"
+                                ? `${room?.participants?.length || 0} participants`
+                                : selectedChat?.online
+                                    ? "online"
+                                    : "offline"}
                         </p>
                     </div>
                 </div>
@@ -466,6 +457,34 @@ function ChatArea() {
                             </div>
                         );
                     })}
+
+                    {/* Typing Indicator */}
+                    {typingUsers.size > 0 && (
+                        <div className="flex justify-start">
+                            <div
+                                className="max-w-[70%] px-4 py-3 rounded-lg bg-[#242626] text-white"
+                                style={{ borderRadius: "18px 18px 18px 4px" }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className="flex gap-1">
+                                        <span
+                                            className="w-2 h-2 bg-[#8696a0] rounded-full animate-bounce"
+                                            style={{ animationDelay: "0ms", animationDuration: "1s" }}
+                                        ></span>
+                                        <span
+                                            className="w-2 h-2 bg-[#8696a0] rounded-full animate-bounce"
+                                            style={{ animationDelay: "150ms", animationDuration: "1s" }}
+                                        ></span>
+                                        <span
+                                            className="w-2 h-2 bg-[#8696a0] rounded-full animate-bounce"
+                                            style={{ animationDelay: "300ms", animationDuration: "1s" }}
+                                        ></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div ref={messagesEndRef} />
                 </div>
 
