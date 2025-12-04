@@ -1,34 +1,58 @@
 import { TbMessage2Plus } from "react-icons/tb";
 import { CiMenuKebab } from "react-icons/ci";
 import { FaSearch } from "react-icons/fa";
+import { MdPersonAdd, MdNotifications } from "react-icons/md";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PiUsersThreeFill } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
-import { useUserList } from "../hooks/useUserList";
+import { useConnections, useReceivedRequests } from "../hooks/useConnections";
 import { formatLastSeen, DEFAULT_AVATAR } from "../utils/format";
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedChat } from "../global/features/userSlice";
 import useSocket from "../hooks/useSocket";
 import { setRoom } from "../global/features/roomSlice";
+import { useQueryClient } from "@tanstack/react-query";
 
 function ChatList() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const [selectedInsight, setSelectedInsight] = useState("All");
     const [menuOpen, setMenuOpen] = useState(false);
-    const sentinelRef = useRef(null);
+    const [searchQuery, setSearchQuery] = useState("");
     const socket = useSocket();
     const { selectedChat, user } = useSelector((state) => state?.user || {});
-    const {
-        data,
-        isLoading,
-        error,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-    } = useUserList(10);
 
-    const users = data?.pages?.flatMap((p) => p.data || p.users || []) || [];
+    // Fetch connected users (friends) instead of all users
+    const { data: connections, isLoading, error, refetch } = useConnections();
+    const { data: pendingRequests } = useReceivedRequests();
+
+    // Filter connections based on search
+    const users = (connections || []).filter(conn => {
+        if (!searchQuery) return true;
+        const name = conn.name?.toLowerCase() || "";
+        const email = conn.email?.toLowerCase() || "";
+        return name.includes(searchQuery.toLowerCase()) || email.includes(searchQuery.toLowerCase());
+    });
+
+    // Listen for real-time connection updates
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleConnectionAccepted = () => {
+            queryClient.invalidateQueries(["connections"]);
+        };
+
+        socket.on("connection:accepted", handleConnectionAccepted);
+        socket.on("connection:request:received", () => {
+            queryClient.invalidateQueries(["connections", "received"]);
+        });
+
+        return () => {
+            socket.off("connection:accepted", handleConnectionAccepted);
+            socket.off("connection:request:received");
+        };
+    }, [socket, queryClient]);
 
     const handleChatSelect = (chatUser) => {
         const chatPayload = {
@@ -48,28 +72,6 @@ function ChatList() {
         });
     };
 
-    const onIntersect = useCallback(
-        (entries) => {
-            const entry = entries[0];
-            if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
-            }
-        },
-        [fetchNextPage, hasNextPage, isFetchingNextPage]
-    );
-
-    useEffect(() => {
-        const node = sentinelRef.current;
-        if (!node) return;
-        const io = new IntersectionObserver(onIntersect, {
-            root: null,
-            rootMargin: "200px",
-            threshold: 0.1,
-        });
-        io.observe(node);
-        return () => io.disconnect();
-    }, [onIntersect]);
-
     const handleLogout = () => {
         localStorage.removeItem("authToken");
         localStorage.removeItem("authUser");
@@ -77,28 +79,63 @@ function ChatList() {
         navigate("/");
     };
 
+    const pendingCount = pendingRequests?.length || 0;
+
     return (
         <div className="flex flex-col h-screen py-3">
             {/* Header */}
             <div className="flex justify-between mb-5">
                 <h1 className='text-white ms-4 text-[1.5rem] font-medium'>WhatsApp</h1>
-                <div className="flex gap-2 pe-1 items-center">
-                    <TbMessage2Plus className='text-white text-[1.5rem] cursor-pointer' />
+                <div className="flex gap-3 pe-3 items-center">
+                    {/* Find People Button */}
+                    <button
+                        onClick={() => navigate("/users")}
+                        className="text-[#8696a0] hover:text-white transition-colors"
+                        title="Find People"
+                    >
+                        <MdPersonAdd className='text-[1.5rem]' />
+                    </button>
+
+                    {/* Requests Button with Badge */}
+                    <button
+                        onClick={() => navigate("/requests")}
+                        className="text-[#8696a0] hover:text-white transition-colors relative"
+                        title="Connection Requests"
+                    >
+                        <MdNotifications className='text-[1.5rem]' />
+                        {pendingCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center rounded-full bg-[#00a884] text-white text-[0.6rem] font-bold">
+                                {pendingCount > 9 ? '9+' : pendingCount}
+                            </span>
+                        )}
+                    </button>
+
                     <div className="relative">
                         <CiMenuKebab className='text-white text-[1.5rem] cursor-pointer' onClick={() => setMenuOpen(!menuOpen)} />
                         {menuOpen && (
-                            <div className="absolute left-0 mt-2 w-56 bg-[#222] rounded-2xl shadow-lg py-3 z-50 border border-[#333] flex flex-col gap-2 animate-fade-in">
+                            <div className="absolute right-0 mt-2 w-56 bg-[#222] rounded-2xl shadow-lg py-3 z-50 border border-[#333] flex flex-col gap-2 animate-fade-in">
+                                <button
+                                    className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]"
+                                    onClick={() => { setMenuOpen(false); navigate("/users"); }}
+                                >
+                                    <MdPersonAdd className="text-[1.2rem]" />
+                                    Find People
+                                </button>
+                                <button
+                                    className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]"
+                                    onClick={() => { setMenuOpen(false); navigate("/requests"); }}
+                                >
+                                    <MdNotifications className="text-[1.2rem]" />
+                                    Requests
+                                    {pendingCount > 0 && (
+                                        <span className="ml-auto px-2 py-0.5 bg-[#00a884] text-white text-xs rounded-full">
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </button>
                                 <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]">
                                     <PiUsersThreeFill className="text-[1.2rem]" />
                                     New group
-                                </button>
-                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]">
-                                    <span className="text-[1.2rem]">★</span>
-                                    Starred messages
-                                </button>
-                                <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]">
-                                    <span className="text-[1.2rem]">☑</span>
-                                    Select chats
                                 </button>
                                 <hr className="border-[#333] mx-5" />
                                 <button className="flex items-center gap-3 px-5 py-2 text-white hover:bg-[#333] text-[1rem]" onClick={handleLogout}>
@@ -119,7 +156,9 @@ function ChatList() {
                     <input
                         type="text"
                         className="w-full pl-10 p-2 rounded-4xl placeholder:text-[#a3acac] bg-[#222] text-white"
-                        placeholder="Search or start a new chat"
+                        placeholder="Search connections"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
             </div>
@@ -135,46 +174,72 @@ function ChatList() {
                     </button>
                 ))}
             </div>
-            {/* Chat List */}
+            {/* Chat List - Connected Users Only */}
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto mt-3 hide-scrollbar px-3">
-                {isLoading && <div className="text-[#a3acac] p-4">Loading...</div>}
-                {error && <div className="text-red-400 p-4">Failed to load users</div>}
+                {isLoading && <div className="text-[#a3acac] p-4 text-center">Loading connections...</div>}
+                {error && <div className="text-red-400 p-4 text-center">Failed to load connections</div>}
 
                 {!isLoading && !error && users.length === 0 && (
-                    <div className="text-[#a3acac] p-6 text-center bg-[#1f2020] border border-[#2a2c2c] rounded-xl">
-                        No users available yet.
+                    <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <div className="w-20 h-20 rounded-full bg-[#1f2c33] flex items-center justify-center mb-4">
+                            <MdPersonAdd className="text-4xl text-[#8696a0]" />
+                        </div>
+                        <h3 className="text-white text-lg font-medium mb-2">No connections yet</h3>
+                        <p className="text-[#8696a0] text-sm mb-4">
+                            Find and connect with people to start chatting
+                        </p>
+                        <button
+                            onClick={() => navigate("/users")}
+                            className="px-4 py-2 bg-[#00a884] text-white rounded-lg hover:bg-[#008f6f] transition-colors flex items-center gap-2"
+                        >
+                            <MdPersonAdd className="text-lg" />
+                            Find People
+                        </button>
                     </div>
                 )}
 
-                {users.map(user => {
-                    const avatar = user.avatar || DEFAULT_AVATAR;
-                    const lastSeenText = formatLastSeen(user.lastSeen);
-                    const isActive = selectedChat?._id === user._id;
-                    return (
-                        <div key={(user._id || user.id) + (user.lastSeen || '')} className="flex items-center gap-3 px-5 cursor-pointer hover:bg-[#222] py-2 rounded-md" onClick={() => handleChatSelect(user)} style={{ backgroundColor: isActive ? '#222' : 'transparent' }}>
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#222]">
-                                <img src={avatar} alt="avatar" className='w-full h-full rounded-full object-cover' />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex justify-between">
-                                    <h1 className='text-white text-[1rem] font-medium'>{user.name || (user.email || '').split('@')[0]}</h1>
-                                    <span className={`${(user.unreadCount || 0) > 0 ? 'text-[#21c063]' : 'text-[#909090]'} text-[0.7rem]`}>{lastSeenText} </span>
-                                </div>
+                {users.map(connUser => {
+                    const avatar = connUser.profilePicture || connUser.avatar || DEFAULT_AVATAR;
+                    const isActive = selectedChat?._id === connUser._id;
+                    const statusText = connUser.online ? "Online" : "Offline";
+                    const statusColor = connUser.online ? "text-[#00a884]" : "text-[#8696a0]";
 
-                                <div className="flex items-center justify-between mt-1">
-                                    <p className='text-[#a3acac] text-[0.8rem] m-0'>{user.lastMessage || ''}</p>
-                                    {(user.unreadCount || 0) > 0 && <span className="w-5 h-5 flex items-center justify-center rounded-full bg-[#21c063] text-white text-xs font-semibold ml-2">{user.unreadCount}</span>}
+                    return (
+                        <div
+                            key={connUser._id}
+                            className={`flex items-center gap-3 px-4 cursor-pointer hover:bg-[#1f2c33] py-3 rounded-lg transition-colors ${isActive ? 'bg-[#1f2c33]' : ''}`}
+                            onClick={() => handleChatSelect(connUser)}
+                        >
+                            <div className="relative">
+                                <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1f2c33]">
+                                    <img src={avatar} alt="avatar" className='w-full h-full object-cover' />
                                 </div>
+                                {connUser.online && (
+                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#0b141a]"></div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-center">
+                                    <h1 className='text-white text-[1rem] font-medium truncate'>
+                                        {connUser.name || (connUser.email || '').split('@')[0]}
+                                    </h1>
+                                    <span className={`${statusColor} text-[0.7rem] flex-shrink-0 ml-2`}>
+                                        {statusText}
+                                    </span>
+                                </div>
+                                <p className='text-[#8696a0] text-[0.8rem] truncate mt-0.5'>
+                                    {connUser.email}
+                                </p>
                             </div>
                         </div>
                     )
                 })}
 
-                {/* sentinel element observed by IntersectionObserver to trigger next page load */}
-                <div ref={sentinelRef} className="w-full h-6" />
-
-                {isFetchingNextPage && <div className="text-[#a3acac] p-4">Loading more...</div>}
-                {users.length > 0 && !hasNextPage && !isLoading && <div className="text-[#777] text-center p-3">No more users</div>}
+                {users.length > 0 && (
+                    <div className="text-[#8696a0] text-center p-3 text-sm">
+                        {users.length} connection{users.length !== 1 ? 's' : ''}
+                    </div>
+                )}
             </div>
         </div>
     )
