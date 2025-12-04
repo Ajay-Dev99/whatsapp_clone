@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MdSearch, MdPersonAdd, MdCheck, MdHourglassEmpty, MdArrowBack, MdPeople } from "react-icons/md";
+import { MdSearch, MdPersonAdd, MdCheck, MdHourglassEmpty, MdArrowBack, MdPeople, MdHome } from "react-icons/md";
 import { HiSparkles, HiUserGroup, HiGlobeAlt, HiHeart } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useDiscoverUsers, useConnectionMutations } from "../hooks/useConnections";
@@ -190,9 +190,17 @@ function UsersPage() {
                     </div>
                     <button
                         onClick={() => navigate("/requests")}
-                        className="p-2.5 rounded-xl bg-[#111b21] text-[#aebac1] hover:text-[#00a884] hover:bg-[#202c33] transition-all duration-200 border border-[#2a3942] relative"
+                        className="p-2.5 rounded-xl bg-[#111b21] text-[#aebac1] hover:text-[#00a884] hover:bg-[#202c33] transition-all duration-200 border border-[#2a3942]"
+                        title="Requests"
                     >
                         <MdPeople className="text-xl" />
+                    </button>
+                    <button
+                        onClick={() => navigate("/home")}
+                        className="p-2.5 rounded-xl bg-[#111b21] text-[#aebac1] hover:text-[#00a884] hover:bg-[#202c33] transition-all duration-200 border border-[#2a3942]"
+                        title="Home"
+                    >
+                        <MdHome className="text-xl" />
                     </button>
                 </div>
 
@@ -302,8 +310,8 @@ function UsersPage() {
                                         key={pageNum}
                                         onClick={() => setPage(pageNum)}
                                         className={`w-9 h-9 rounded-lg font-medium transition-all ${page === pageNum
-                                                ? 'bg-[#00a884] text-white'
-                                                : 'bg-[#111b21] text-[#8696a0] hover:bg-[#202c33] border border-[#2a3942]'
+                                            ? 'bg-[#00a884] text-white'
+                                            : 'bg-[#111b21] text-[#8696a0] hover:bg-[#202c33] border border-[#2a3942]'
                                             }`}
                                     >
                                         {pageNum}

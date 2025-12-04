@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MdArrowBack, MdCheck, MdClose, MdInbox, MdSend, MdExplore } from "react-icons/md";
+import { MdArrowBack, MdCheck, MdClose, MdInbox, MdSend, MdExplore, MdHome } from "react-icons/md";
 import { HiSparkles, HiUserPlus, HiHeart, HiBell, HiPaperAirplane } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useReceivedRequests, useSentRequests, useConnectionMutations } from "../hooks/useConnections";
@@ -218,8 +218,16 @@ function RequestsPage() {
                     <button
                         onClick={() => navigate("/users")}
                         className="p-2.5 rounded-xl bg-[#111b21] text-[#aebac1] hover:text-[#00a884] hover:bg-[#202c33] transition-all duration-200 border border-[#2a3942]"
+                        title="Discover People"
                     >
                         <MdExplore className="text-xl" />
+                    </button>
+                    <button
+                        onClick={() => navigate("/home")}
+                        className="p-2.5 rounded-xl bg-[#111b21] text-[#aebac1] hover:text-[#00a884] hover:bg-[#202c33] transition-all duration-200 border border-[#2a3942]"
+                        title="Home"
+                    >
+                        <MdHome className="text-xl" />
                     </button>
                 </div>
 
@@ -228,8 +236,8 @@ function RequestsPage() {
                     <button
                         onClick={() => setActiveTab("received")}
                         className={`rounded-xl p-4 border text-center transition-all duration-300 ${activeTab === "received"
-                                ? "bg-gradient-to-br from-[#00a884]/20 to-[#00a884]/5 border-[#00a884]/50"
-                                : "bg-[#111b21] border-[#2a3942] hover:border-[#00a884]/30"
+                            ? "bg-gradient-to-br from-[#00a884]/20 to-[#00a884]/5 border-[#00a884]/50"
+                            : "bg-[#111b21] border-[#2a3942] hover:border-[#00a884]/30"
                             }`}
                     >
                         <div className="flex items-center justify-center gap-2 mb-1">
@@ -247,8 +255,8 @@ function RequestsPage() {
                     <button
                         onClick={() => setActiveTab("sent")}
                         className={`rounded-xl p-4 border text-center transition-all duration-300 ${activeTab === "sent"
-                                ? "bg-gradient-to-br from-[#00a884]/20 to-[#00a884]/5 border-[#00a884]/50"
-                                : "bg-[#111b21] border-[#2a3942] hover:border-[#00a884]/30"
+                            ? "bg-gradient-to-br from-[#00a884]/20 to-[#00a884]/5 border-[#00a884]/50"
+                            : "bg-[#111b21] border-[#2a3942] hover:border-[#00a884]/30"
                             }`}
                     >
                         <div className="flex items-center justify-center gap-2 mb-1">
