@@ -12,6 +12,8 @@ import useSocket from "../hooks/useSocket";
 function ChatArea() {
     const { selectedChat, user } = useSelector((state) => state?.user);
     const { room } = useSelector((state) => state?.room);
+
+    console.log(room, "room for chat area");
     const { messages, isLoading, error, hasMore, loadMore, isLoadingMore, refresh, markAsRead } = useMessages(room?._id, 20);
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
