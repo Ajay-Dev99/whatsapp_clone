@@ -3,23 +3,20 @@ import { showToast } from "../utils/toast";
 import { clearAuth, getAuthToken } from "../utils/authStorage";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:3000/api/v1",
+    baseURL: process.env.VITE_REACT_APP_API_URL,
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: 10000, // 10 seconds timeout
+    timeout: 10000,
 });
 
-// Request Interceptor
 axiosInstance.interceptors.request.use(
     (config) => {
-        // Add auth token if available
         const token = getAuthToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Log request in development
         if (process.env.NODE_ENV === 'development') {
             console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
                 data: config.data,

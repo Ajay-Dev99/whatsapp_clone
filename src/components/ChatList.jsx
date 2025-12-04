@@ -1,17 +1,34 @@
-import { TbMessage2Plus } from "react-icons/tb";
 import { CiMenuKebab } from "react-icons/ci";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaCheckDouble } from "react-icons/fa";
 import { MdPersonAdd, MdNotifications } from "react-icons/md";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { PiUsersThreeFill } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import { useConnections, useReceivedRequests } from "../hooks/useConnections";
-import { formatLastSeen, DEFAULT_AVATAR } from "../utils/format";
+import { DEFAULT_AVATAR } from "../utils/format";
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedChat } from "../global/features/userSlice";
 import useSocket from "../hooks/useSocket";
 import { setRoom } from "../global/features/roomSlice";
 import { useQueryClient } from "@tanstack/react-query";
+
+// Format time for last message
+const formatMessageTime = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } else if (diffDays === 1) {
+        return "Yesterday";
+    } else if (diffDays < 7) {
+        return date.toLocaleDateString([], { weekday: "short" });
+    } else {
+        return date.toLocaleDateString([], { month: "short", day: "numeric" });
+    }
+};
 
 function ChatList() {
     const navigate = useNavigate();
@@ -27,15 +44,26 @@ function ChatList() {
     const { data: connections, isLoading, error, refetch } = useConnections();
     const { data: pendingRequests } = useReceivedRequests();
 
-    // Filter connections based on search
+    // Filter connections based on search and selected insight
     const users = (connections || []).filter(conn => {
-        if (!searchQuery) return true;
-        const name = conn.name?.toLowerCase() || "";
-        const email = conn.email?.toLowerCase() || "";
-        return name.includes(searchQuery.toLowerCase()) || email.includes(searchQuery.toLowerCase());
+        // Search filter
+        if (searchQuery) {
+            const name = conn.name?.toLowerCase() || "";
+            const email = conn.email?.toLowerCase() || "";
+            if (!name.includes(searchQuery.toLowerCase()) && !email.includes(searchQuery.toLowerCase())) {
+                return false;
+            }
+        }
+
+        // Insight filter
+        if (selectedInsight === "Unread" && !conn.unreadCount) {
+            return false;
+        }
+
+        return true;
     });
 
-    // Listen for real-time connection updates
+    // Listen for real-time connection and message updates
     useEffect(() => {
         if (!socket) return;
 
@@ -43,14 +71,21 @@ function ChatList() {
             queryClient.invalidateQueries(["connections"]);
         };
 
+        const handleNewMessage = () => {
+            // Refresh connections to update last message and unread count
+            queryClient.invalidateQueries(["connections"]);
+        };
+
         socket.on("connection:accepted", handleConnectionAccepted);
         socket.on("connection:request:received", () => {
             queryClient.invalidateQueries(["connections", "received"]);
         });
+        socket.on("chat:message:receive", handleNewMessage);
 
         return () => {
             socket.off("connection:accepted", handleConnectionAccepted);
             socket.off("connection:request:received");
+            socket.off("chat:message:receive", handleNewMessage);
         };
     }, [socket, queryClient]);
 
@@ -201,8 +236,19 @@ function ChatList() {
                 {users.map(connUser => {
                     const avatar = connUser.profilePicture || connUser.avatar || DEFAULT_AVATAR;
                     const isActive = selectedChat?._id === connUser._id;
-                    const statusText = connUser.online ? "Online" : "Offline";
-                    const statusColor = connUser.online ? "text-[#00a884]" : "text-[#8696a0]";
+                    const hasUnread = connUser.unreadCount > 0;
+                    const lastMessage = connUser.lastMessage;
+                    const messageTime = formatMessageTime(lastMessage?.createdAt);
+
+                    // Get preview text for last message
+                    const getMessagePreview = () => {
+                        if (!lastMessage) return "Start a conversation";
+                        const prefix = lastMessage.isFromMe ? "You: " : "";
+                        const content = lastMessage.type === "text"
+                            ? lastMessage.content
+                            : `📎 ${lastMessage.type}`;
+                        return prefix + content;
+                    };
 
                     return (
                         <div
@@ -220,16 +266,28 @@ function ChatList() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-center">
-                                    <h1 className='text-white text-[1rem] font-medium truncate'>
+                                    <h1 className={`text-[1rem] font-medium truncate ${hasUnread ? 'text-white' : 'text-white'}`}>
                                         {connUser.name || (connUser.email || '').split('@')[0]}
                                     </h1>
-                                    <span className={`${statusColor} text-[0.7rem] flex-shrink-0 ml-2`}>
-                                        {statusText}
+                                    <span className={`text-[0.7rem] flex-shrink-0 ml-2 ${hasUnread ? 'text-[#00a884]' : 'text-[#8696a0]'}`}>
+                                        {messageTime}
                                     </span>
                                 </div>
-                                <p className='text-[#8696a0] text-[0.8rem] truncate mt-0.5'>
-                                    {connUser.email}
-                                </p>
+                                <div className="flex justify-between items-center mt-0.5">
+                                    <p className={`text-[0.8rem] truncate flex-1 ${hasUnread ? 'text-[#d1d7db] font-medium' : 'text-[#8696a0]'}`}>
+                                        {lastMessage?.isFromMe && (
+                                            <span className="inline-flex items-center mr-1">
+                                                <FaCheckDouble className={`text-[0.65rem] ${lastMessage.status === 'read' ? 'text-[#53bdeb]' : 'text-[#8696a0]'}`} />
+                                            </span>
+                                        )}
+                                        {getMessagePreview()}
+                                    </p>
+                                    {hasUnread && (
+                                        <span className="flex-shrink-0 ml-2 min-w-[20px] h-[20px] flex items-center justify-center rounded-full bg-[#00a884] text-white text-[0.7rem] font-medium px-1.5">
+                                            {connUser.unreadCount > 99 ? '99+' : connUser.unreadCount}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )

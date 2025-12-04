@@ -52,12 +52,13 @@ const removeConnection = async (connectionId) => {
     return response.data;
 };
 
-// Hook for connected users (friends)
+// Hook for connected users (friends) with last messages
 export const useConnections = () => {
     return useQuery({
         queryKey: ["connections"],
         queryFn: fetchConnections,
-        staleTime: 1000 * 60 * 2, // 2 minutes
+        staleTime: 1000 * 30, // 30 seconds - refresh more often to get latest messages
+        refetchOnWindowFocus: true,
     });
 };
 
