@@ -2,8 +2,10 @@ import axios from "axios";
 import { showToast } from "../utils/toast";
 import { clearAuth, getAuthToken } from "../utils/authStorage";
 
+const API_URL = "https://chat-appclone-backend.vercel.app" || import.meta.env.VITE_API_URL || import.meta.env.VITE_REACT_APP_API_URL || "http://localhost:3000/api/v1";
+
 const axiosInstance = axios.create({
-    baseURL: process.env.VITE_REACT_APP_API_URL,
+    baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
     },
@@ -17,7 +19,7 @@ axiosInstance.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
             console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
                 data: config.data,
                 params: config.params
