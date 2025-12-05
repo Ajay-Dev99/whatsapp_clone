@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: 10000,
+    timeout: 60000, // 60 seconds - Render free tier can take time to wake up
 });
 
 axiosInstance.interceptors.request.use(
