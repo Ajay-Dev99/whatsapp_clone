@@ -47,7 +47,7 @@ const useMessages = (roomId, limit = 20) => {
         staleTime: 1000 * 60 * 5,
     });
 
-    const messages = data?.pages?.flatMap(page => page.messages) || [];
+    const messages = data?.pages?.flatMap(page => page?.messages ?? []) || [];
 
     const markAsReadMutation = useMutation({
         mutationFn: () => markMessagesAsRead(roomId),

@@ -2,7 +2,8 @@ import axios from "axios";
 import { showToast } from "../utils/toast";
 import { clearAuth, getAuthToken } from "../utils/authStorage";
 
-const API_URL = "https://chat-appclone-backend.vercel.app" || import.meta.env.VITE_API_URL || import.meta.env.VITE_REACT_APP_API_URL || "http://localhost:3000/api/v1";
+const API_URL = "http://localhost:3000/api/v1"
+// const API_URL = "https://chat-appclone-backend.vercel.app" || import.meta.env.VITE_API_URL || import.meta.env.VITE_REACT_APP_API_URL || "http://localhost:3000/api/v1";
 
 const axiosInstance = axios.create({
     baseURL: API_URL,
