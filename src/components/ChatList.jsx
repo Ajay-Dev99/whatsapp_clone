@@ -41,7 +41,7 @@ function ChatList() {
     const { selectedChat, user } = useSelector((state) => state?.user ?? {});
 
     // Fetch connected users (friends) instead of all users
-    const { data: connections, isLoading, error, refetch } = useConnections();
+    const { data: connections, isLoading, error } = useConnections();
     const { data: pendingRequests } = useReceivedRequests();
 
     // Filter connections based on search and selected insight
