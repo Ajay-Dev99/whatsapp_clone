@@ -8,10 +8,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import ChatPlaceholder from "./ChatPlaceholder";
 import useMessages from "../hooks/useMessages";
 import useSocket from "../hooks/useSocket";
+import { useConnections } from "../hooks/useConnections";
 
 function ChatArea() {
     const { selectedChat, user } = useSelector((state) => state?.user);
     const { room } = useSelector((state) => state?.room);
+    const { data: connections } = useConnections();
 
     console.log(room, "room for chat area");
     const { messages, isLoading, error, hasMore, loadMore, isLoadingMore, refresh, markAsRead } = useMessages(room?._id, 20);
@@ -31,6 +33,10 @@ function ChatArea() {
 
     const hasActiveRoom =
         room && typeof room === "object" && Object.keys(room).length > 0;
+
+    // Get freshest online status for the selected chat user from connections list
+    const currentChatUserOnline =
+        connections?.find((u) => u._id === selectedChat?._id)?.online ?? selectedChat?.online;
 
     // Cleanup typing timeout on unmount or room change
     useEffect(() => {
@@ -350,7 +356,7 @@ function ChatArea() {
                         <p className="text-[#8696a0] text-[0.8rem]">
                             {room?.type === "group"
                                 ? `${room?.participants?.length || 0} participants`
-                                : selectedChat?.online
+                                : currentChatUserOnline
                                     ? "online"
                                     : "offline"}
                         </p>
