@@ -104,8 +104,8 @@ axiosInstance.interceptors.response.use(
             }
 
             console.error(`❌ API Error: ${status} - ${errorMessage}`, {
-                url: error.config?.url,
-                method: error.config?.method,
+                url: error?.config?.url,
+                method: error?.config?.method,
                 data: data
             });
 

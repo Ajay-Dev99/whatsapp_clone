@@ -37,7 +37,7 @@ const UserCard = ({ user, onConnect, onCancel, onNavigate, isLoading }) => {
             if (user.connectionDirection === "sent") {
                 return (
                     <button
-                        onClick={() => onCancel(user.connection._id)}
+                        onClick={() => onCancel(user?.connection?._id)}
                         disabled={isLoading}
                         className="w-full py-2.5 bg-[#2a3942] text-[#8696a0] rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#f15c6d]/20 hover:text-[#f15c6d] transition-colors group"
                         title="Click to cancel request"

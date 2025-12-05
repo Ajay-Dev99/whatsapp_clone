@@ -38,7 +38,7 @@ function ChatList() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const socket = useSocket();
-    const { selectedChat, user } = useSelector((state) => state?.user || {});
+    const { selectedChat, user } = useSelector((state) => state?.user ?? {});
 
     // Fetch connected users (friends) instead of all users
     const { data: connections, isLoading, error, refetch } = useConnections();

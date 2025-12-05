@@ -80,8 +80,8 @@ function ChatArea() {
                     }
 
                     // Check if message already exists (avoid duplicates)
-                    const messageExists = oldData.pages.some(page =>
-                        page.messages.some(msg => msg._id === data.message._id)
+                    const messageExists = oldData?.pages?.some(page =>
+                        page?.messages?.some(msg => msg?._id === data?.message?._id)
                     );
 
                     if (messageExists) {
@@ -90,13 +90,13 @@ function ChatArea() {
                     }
 
                     // Add new message to the first page
-                    const newPages = [...oldData.pages];
-                    if (newPages.length > 0) {
+                    const newPages = [...(oldData?.pages ?? [])];
+                    if (newPages?.length > 0) {
                         newPages[0] = {
                             ...newPages[0],
-                            messages: [...newPages[0].messages, data.message]
+                            messages: [...(newPages[0]?.messages ?? []), data?.message]
                         };
-                        console.log("✅ Message added to cache, total messages:", newPages[0].messages.length);
+                        console.log("✅ Message added to cache, total messages:", newPages[0]?.messages?.length);
                     }
 
                     return {
@@ -233,8 +233,8 @@ function ChatArea() {
                 setIsSending(false);
                 console.log("📬 Received acknowledgment:", response);
 
-                if (response?.success) {
-                    console.log("✅ Message sent successfully:", response.message._id);
+                    if (response?.success) {
+                        console.log("✅ Message sent successfully:", response?.message?._id);
                     setNewMessage("");
 
                     // Stop typing indicator when message is sent

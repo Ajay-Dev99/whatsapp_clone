@@ -56,7 +56,7 @@ const RequestCard = ({ request, type, onAccept, onReject, onCancel, isLoading, f
             {type === "received" ? (
                 <div className="flex gap-2">
                     <button
-                        onClick={() => onAccept(request._id, request.requester._id)}
+                        onClick={() => onAccept(request?._id, request?.requester?._id)}
                         disabled={isLoading}
                         className="flex-1 py-2.5 bg-gradient-to-r from-[#00a884] to-[#00d4a4] text-white rounded-xl text-sm font-medium hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-1"
                     >
@@ -64,7 +64,7 @@ const RequestCard = ({ request, type, onAccept, onReject, onCancel, isLoading, f
                         <span>Accept</span>
                     </button>
                     <button
-                        onClick={() => onReject(request._id, request.requester._id)}
+                        onClick={() => onReject(request?._id, request?.requester?._id)}
                         disabled={isLoading}
                         className="flex-1 py-2.5 bg-[#2a3942] text-[#8696a0] rounded-xl text-sm font-medium hover:bg-[#f15c6d] hover:text-white transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-1"
                     >
@@ -82,7 +82,7 @@ const RequestCard = ({ request, type, onAccept, onReject, onCancel, isLoading, f
                         <span>Awaiting response</span>
                     </div>
                     <button
-                        onClick={() => onCancel(request._id)}
+                        onClick={() => onCancel(request?._id)}
                         disabled={isLoading}
                         className="w-full py-2 bg-[#2a3942] text-[#8696a0] rounded-xl text-sm font-medium hover:bg-[#f15c6d]/20 hover:text-[#f15c6d] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2"
                     >

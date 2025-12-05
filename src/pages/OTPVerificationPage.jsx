@@ -57,7 +57,7 @@ function OTPVerificationPage() {
     // Handle paste
     const handlePaste = (e) => {
         e.preventDefault()
-        const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+        const pastedData = e?.clipboardData?.getData('text')?.replace(/\D/g, '')?.slice(0, 6) ?? ''
         const newOtp = [...otp]
 
         for (let i = 0; i < pastedData.length && i < 6; i++) {
@@ -99,7 +99,7 @@ function OTPVerificationPage() {
                 navigate('/home')
             },
             onError: (error) => {
-                setError(error.message)
+                setError(error?.message ?? 'Verification failed')
                 setIsLoading(false)
             }
         })

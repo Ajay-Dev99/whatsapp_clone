@@ -24,7 +24,7 @@ const useAuth = () => {
             showToast.success("OTP Sent", "Please check your email for the verification code");
         },
         onError: (error) => {
-            console.error("❌ Failed to send OTP:", error.message);
+            console.error("❌ Failed to send OTP:", error?.message);
             // Error toast is handled by axios interceptor
         },
     });
@@ -33,9 +33,9 @@ const useAuth = () => {
         mutationFn: async ({ email, otp }) => {
             const response = await axiosInstance.post("/auth/verify-otp", { email, otp });
 
-            persistAuth(response.data);
-            if (response.data?.user) {
-                dispatch(setUser(response.data.user));
+            persistAuth(response?.data);
+            if (response?.data?.user) {
+                dispatch(setUser(response?.data?.user));
             }
 
             return response.data;
@@ -45,7 +45,7 @@ const useAuth = () => {
             showToast.success("Login Successful", "Welcome! You are now logged in");
         },
         onError: (error) => {
-            console.error("❌ Failed to verify OTP:", error.message);
+            console.error("❌ Failed to verify OTP:", error?.message);
             // Error toast is handled by axios interceptor
         },
     });
@@ -62,7 +62,7 @@ const useAuth = () => {
             showToast.success("Logged Out", "You have been successfully logged out");
         },
         onError: (error) => {
-            console.error("❌ Failed to logout:", error.message);
+            console.error("❌ Failed to logout:", error?.message);
             clearAuthStorage();
             dispatch(setUser(null));
             showToast.warning("Logout Warning", "Logged out locally, but server logout failed");

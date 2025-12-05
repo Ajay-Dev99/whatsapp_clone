@@ -13,18 +13,18 @@ export const useUserList = (limit = 10) => {
             return res.data;
         },
         getNextPageParam: (lastPage, pages) => {
-            if (lastPage && typeof lastPage.nextPage !== "undefined") {
-                return lastPage.nextPage || undefined;
+            if (lastPage && typeof lastPage?.nextPage !== "undefined") {
+                return lastPage?.nextPage || undefined;
             }
 
             
-            if (lastPage && typeof lastPage.hasMore !== "undefined") {
-                return lastPage.hasMore ? pages.length + 1 : undefined;
+            if (lastPage && typeof lastPage?.hasMore !== "undefined") {
+                return lastPage?.hasMore ? pages?.length + 1 : undefined;
             }
 
           
-            if (lastPage && Array.isArray(lastPage.data) && lastPage.data.length === limit) {
-                return pages.length + 1;
+            if (lastPage && Array.isArray(lastPage?.data) && lastPage?.data?.length === limit) {
+                return pages?.length + 1;
             }
 
             return undefined;

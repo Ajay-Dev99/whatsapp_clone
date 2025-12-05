@@ -5,8 +5,8 @@ import { useSelector } from "react-redux";
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3000";
 
 const useSocket = () => {
-    const { user, selectedChat } = useSelector((state) => state.user || {});
-    const { room } = useSelector((state) => state.room || {});
+    const { user, selectedChat } = useSelector((state) => state?.user ?? {});
+    const { room } = useSelector((state) => state?.room ?? {});
 
     const socket = useMemo(() => {
         return io(SOCKET_URL, {
