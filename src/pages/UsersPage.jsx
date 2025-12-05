@@ -88,7 +88,7 @@ const UserCard = ({ user, onConnect, onCancel, onNavigate, isLoading }) => {
                             className="w-full h-full object-cover"
                         />
                     </div>
-                    {user.isOnline && (
+                    {user.online && (
                         <div className="absolute bottom-1 right-1 w-4 h-4 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
                     )}
                 </div>

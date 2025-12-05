@@ -76,16 +76,39 @@ function ChatList() {
             queryClient.invalidateQueries(["connections"]);
         };
 
+        // Real-time presence updates
+        const handleUserOnline = ({ userId }) => {
+            queryClient.setQueryData(["connections"], (old) => {
+                if (!old) return old;
+                return old.map((user) =>
+                    user._id === userId ? { ...user, online: true } : user
+                );
+            });
+        };
+
+        const handleUserOffline = ({ userId }) => {
+            queryClient.setQueryData(["connections"], (old) => {
+                if (!old) return old;
+                return old.map((user) =>
+                    user._id === userId ? { ...user, online: false } : user
+                );
+            });
+        };
+
         socket.on("connection:accepted", handleConnectionAccepted);
         socket.on("connection:request:received", () => {
             queryClient.invalidateQueries(["connections", "received"]);
         });
         socket.on("chat:message:receive", handleNewMessage);
+        socket.on("user:online", handleUserOnline);
+        socket.on("user:offline", handleUserOffline);
 
         return () => {
             socket.off("connection:accepted", handleConnectionAccepted);
             socket.off("connection:request:received");
             socket.off("chat:message:receive", handleNewMessage);
+            socket.off("user:online", handleUserOnline);
+            socket.off("user:offline", handleUserOffline);
         };
     }, [socket, queryClient]);
 
