@@ -233,8 +233,8 @@ function ChatArea() {
                 setIsSending(false);
                 console.log("📬 Received acknowledgment:", response);
 
-                    if (response?.success) {
-                        console.log("✅ Message sent successfully:", response?.message?._id);
+                if (response?.success) {
+                    console.log("✅ Message sent successfully:", response?.message?._id);
                     setNewMessage("");
 
                     // Stop typing indicator when message is sent

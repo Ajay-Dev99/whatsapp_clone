@@ -9,7 +9,7 @@ export const useUserList = (limit = 10) => {
             const res = await axiosInstance.get(`/users/list`, {
                 params: { page: pageParam, limit },
             });
-         
+
             return res.data;
         },
         getNextPageParam: (lastPage, pages) => {
@@ -17,12 +17,12 @@ export const useUserList = (limit = 10) => {
                 return lastPage?.nextPage || undefined;
             }
 
-            
+
             if (lastPage && typeof lastPage?.hasMore !== "undefined") {
                 return lastPage?.hasMore ? pages?.length + 1 : undefined;
             }
 
-          
+
             if (lastPage && Array.isArray(lastPage?.data) && lastPage?.data?.length === limit) {
                 return pages?.length + 1;
             }
